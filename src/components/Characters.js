@@ -1,29 +1,59 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "react-query";
 
 import Character from "./Character";
 
 export default function Characters() {
-  const fetchCharacters = async () =>
-    await fetch("https://rickandmortyapi.com/api/character").then((response) =>
-      response.json()
-    );
+  const [page, setPage] = useState(1);
 
-  const { data, status } = useQuery("characters", fetchCharacters);
+  const fetchCharacters = async ({ queryKey }) =>
+    await fetch(
+      `https://rickandmortyapi.com/api/character?page=${queryKey[1]}`
+    ).then((response) => response.json());
 
-  if (status === "loading") {
+  const { data, isPreviousData, isError, isLoading } = useQuery(
+    ["characters", page],
+    fetchCharacters,
+    {
+      keepPreviousData: true,
+    }
+  );
+
+  const mzxPage = data?.info?.pages || 0;
+
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (status === "error") {
+  if (isError) {
     return <div>Error...</div>;
   }
 
+  const isPreviousDisabled = page === 1;
+  const isNextDisabled = page === mzxPage;
+
   return (
-    <div>
-      {data.results.map((character) => (
-        <Character key={character.id} character={character} />
-      ))}
+    <div className="container">
+      <h1>Rick and Morty</h1>
+      <div className="characters">
+        {data.results.map((character) => (
+          <Character key={character.id} character={character} />
+        ))}
+      </div>
+      <div>
+        <button
+          disabled={isPreviousDisabled}
+          onClick={() => setPage((page) => page - 1)}
+        >
+          Previous
+        </button>
+        <button
+          disabled={isPreviousData && isNextDisabled}
+          onClick={() => setPage((page) => page + 1)}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }
